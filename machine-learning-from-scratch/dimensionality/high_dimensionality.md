@@ -1,0 +1,135 @@
+# High Dimensionality
+
+## General
+- Examples: Images, Metabolome data, Gene expression, text,
+- Challenges: Curse of dimensionality
+  - distance/similarity functions loose their discriminative power => distance to the nearest and to the farthest neighbor converge
+  - noise from the irrelevant features completely dominates the signal from the relevant ones
+  - The larger the hypothesis space the harder to find the correct hypothesis and the more training instances we need to generalize correctly
+  - Patterns and models on high-dimensional data are often hard to interpret
+  - Efficiency in high-dimensional spaces is often limited, because index structures degenerate and distance computations are much more expensive
+  - Patterns might only be observable in subspaces (or projected spaces) and not in the full dimensional space
+- Solutions: 
+  - Feature selection
+  - Dimensionality reduction
+  - learning in subspaces
+
+# Feature selection
+- remove irrelevant and/or redundant features
+  - Irrelevant features: not useful for the learning task
+  - Redundant features: a relevant feature may be redundant in the presence of another relevant feature with which it is strongly correlated
+- Goal: minimal subspace dimensions F`⊆ F which is optimal for a giving learning task
+- Feature subset generation:
+    - methods: 
+      - Filter:
+        - assign an ``importance” score to each feature to filter out the useless ones
+        - information gain, χ2,...
+        - Fast and simple but doesn't consider interaction between features
+      - Wrapper: 
+        - learning algorithm performance is used to determine the quality of selected features
+        - Considers feature dependencies, but higher risk of overfitting and computationally intensive
+      - Embedded:
+        - Integrate feature selection into the model building process
+        - less computationally intensive, but specific to a learning methods
+    - Quality measures: 
+      - Information gain, Chi-square χ2, Mutual Information
+      - Subspace:
+        - Distance-based:
+          - distance between the within-class nearest neighbor and the between-classes nearest neighbor
+        - Model-based:
+          - Directly employ a data mining algorithm to evaluate the subspace
+          - Runtime for training and applying the classifier should be low
+          - The classifier parameterization should not be of great importance
+        - Subspace Inconsistency (IC):
+          - identical feature vectors u ,v ( vi = ui 1≤ i ≤ d) in subspace U but different class labels (C(u)≠ C(v) )
+          -  u ,v ϵ DB. u=<u1,u2,..,ud> , v=<v1,v2,..,vd> and U  subspace
+          -  $X_U(A)$: Number of all identical vectors A in U
+          -  $X^c_U(A)$: Number of all identical vectors in U having class label C
+          - Inconsistency of U|A: $IC_U(A)=X_U(A)-max_{c\in C}X_U^c(A)$
+          - Inconsistency of U: $IC(U) = \frac{\sum_{A\in DB}IC_U(A)}{|DB|}$
+          - Monotonicity: $U_1 \sub U_2 \implies IC(U_1) \ge IC(U_2)$
+    - Search strategies: 
+      - Forward Selection and Feature Ranking:
+        - Sort the dimensions f1,,..,fd w.r.t. their performance predicting the class and Select the k-best
+        - Cons: 
+          - Only considers correlation to class
+            - Features must display direct correlations to the classes
+            - subspace, might contain highly correlated or even redundant features.
+        - Pros: 
+          - evaluated {f1, f2, …, fd} features w.r.t. the class attribute Y instead of (d over k) subspaces
+    - Backward elimination:
+      - greedy subspace generation
+        - removes the least significant feature at each iteration which improves the performance of the model 
+        - repeat this until no improvement is observed 
+        - Pros:
+          - Considers complete subspaces (multiple dependencies are used)
+          - Can recognize and eliminate redundant features
+      - Cons:
+        - Tests w.r.t. subspace quality usually requires much more effort
+        - heuristic greedy search which do not necessarily find the optimal
+    - Branch and Bound Search:
+      - optimal k-dimensional feature subset under the monotonicity assumption
+      - removes features using a depth-first strategy (DFS)
+        - measure with Subspace Inconsistency (IC)
+      - Pros: 
+        - Monotonicity allows efficient search for optimal solutions
+        - Well-suited for binary or discrete data
+      - Cons: 
+        - useless without groups of identical features
+    - Randomized k-dimensional subspace projections:
+      - Select n random subspaces with the target dimensionality k=|F’|, evaluate each of them and select the best one. (d over k) possible subspaces
+      - Needs quality measures for complete subspaces
+      - Trade-off between quality of subspaces and effort depends on parameter k.
+      - Cons: 
+        - Computational effort and quality of results strongly depend on the subspace quality evaluation measure and the sample size n.
+        - No directed search for combining highly-relevant and non-redundant features
+      - Genetic Algorithms: 
+        - search heuristic that is inspired by Darwin's theory of natural evolution
+        - natural selection where the fittest individuals are selected for reproduction
+      - Feature Clustering:   
+        - Cluster features in the space of data objects and select one representative feature for each of the clusters
+        - item-based collaborative filtering
+
+# Dimensionality reduction
+- find a low dimensional feature space F’ that can “reconstruct” the original space F as accurately as possible
+- Redundant features are ‘’summarized’’
+- Irrelevant features contribute with a small weight
+- new feature space F’ consists of “artificial” variables/features
+  - linear combinations of the original variables as in PCA
+  - non-linear combinations of the original variables as in autoencoders
+  - F’ is often not interpretable
+- typically unsupervised
+- methods: reference point embedding, Principal component analysis (PCA)- unsupervised, Singular value decomposition (SVD), Linear Discriminant Analysis (LDA) - supervised, Autoencoders,...
+  
+# PCA
+  - Choose the direction that maximizes the variance of the projected data
+  - uses an orthogonal transformation to convert a set of observations of possibly correlated variables d into a set of values of linearly uncorrelated variables k called principal components
+  - reduce the dimensionality from d to k (k<d) while retaining most of the information in the data
+  - algorithm:
+    - 1. Compute the covariance matrix S of D
+    - 2. Compute the eigenvalues and the corresponding eigenvectors of S
+    - 3. Select the k biggest eigenvalues and their eigenvectors (V)
+    - 4. The k selected eigenvectors represent an orthogonal basis; the rest are ignored.
+    - 5. Transform the original n × d data matrix D with the d × k basis V:
+    - V is the transformation we were looking for
+
+# Autoencoders:
+  - type of artificial neural network for learning a lower- dimensional feature representation from unlabeled training data
+  - learns to reproduce the most frequently observed charateristics
+  - Non-linear solution
+  - Idea:
+    - Given instances X (no target outputs -> unsupervised learning)
+    - Compress the input into a lower-dimensional code (bottleneck layer z).
+    - Reconstruct the output from this representation.
+  - Architechture:
+    - Encoder: map the input 𝑥𝑥 into a lower dimensional latent space z (bottleneck)
+      - learn a function f that maps the input into the latent space z: $f(x) = \sigma(Wx+b)$
+    - Latent representation: the compressed representation 𝑧𝑧 of the input
+      - Of much lower dimensionality
+    - Decoder: map the latent representation to a reconstruction of the input
+      - trained to learn a function g that reconstructs the input from the latent representation: $g(z) = \sigma(W'z+b'$
+  - trained so that to minimize the reconstruction loss L(X,X^), e.g., squared loss
+  - activation function $\sigma$ must be non-linear like ReLU(Otherwise, it can only learn a linear function and ends up in approximating PCA)
+  - anomaly detection:
+    - reconstruction loss of anomalies can be apparently higher
+  - Applications: Dimensionality Reduction, Anomaly detection, image compression, image denoising

@@ -1,0 +1,151 @@
+# Data Streams
+
+## General
+- data stream = potentially unbounded, ordered sequence of data items, which arrive
+continuously at high-speeds
+- data evolve with time --> classifier is becoming invalid/obsolete with external and internal changes
+- incremental models: incorporate new data
+- deal with non-stationary data (discard obsolete data --> ageing/forgetting/relearning, unlearning)
+  - Forgetting data:
+    - Forgetting in windows
+      - Landmark window model: Include all objects from a given landmark.
+      - Sliding window model: Remember only the n more recent entries, where n is the window size
+    - Forgetting via ageing like exponential ageing
+      - Damped window model: fading function f(t) assigns each point a weight that decreases with time t via f(t)
+        - Past still included but less infuential
+        - $f(o,t)=e^{-\lambda(t-t_o)}$ with o: point, t: current time, to: arrival time of o, $\lambda>0$: decay rate determining importance of historical data, $t-t_o$: ime elapsed since the occurrence of the point
+        - higher λ, the lower the importance of old data
+  - Forgetting (parts of a) model
+    - re-learn locally vs globally
+      - model-based forgetting for a decision tree model: 
+        - Parts of the tree (subtrees) that do not perform well are re-learned (locally)
+        - If the root is not performing well the whole tree is relearned (globally)
+- concept drift: joint distribution between the set of predictive variables X and target variable y, i.e., P(X,y), might change over the stream
+  - $\exists X: P_t(X,y) \neq P_{t'}(X,y)$
+  - Because: $P_t(X,y) = P_t(X)*P_t(y|X) \implies$ changes in marginal distribution or posterior probabilities of classes
+
+## Hoeffding Tree
+  - to pick the best split attribute for a node, it may be sufficient to consider only a small subset of the training examples that pass through that node
+  - How many instances are necessary?
+    - Hoeffding bound: $\epsilon = \sqrt{\frac{R^2 ln(1/\delta)}{2n}}$
+    - with confidence 1-δ the true mean of the variable, $μ_r$, is at least r-ε, i.e., $P(μ_r ≥r-ε) = 1-δ$
+    - Compute Infogain of all features and calculate difference between 2 best. Difference has to be greater than ε bound to do the split
+  - breaking ties: splitting on current best if ∆G<ε<τ, where τ is a user-specified tie threshold
+  - grace period N_min specifies observed umber of instances in a nod before attempting a new split
+  - Adaptive Size Hoeffding Tree (ASHT):
+    - global forgetting:
+      - Forgetting: maximum size bound --> limit is reached, the tree is reset and looses all information learned thus far
+  - Concept-Adapting Hoeffding Tree (AdaHT):
+    - local forgetting:
+      - maintaining an alternate sub-tree when the performance of a node drops
+      - When the new sub-tree starts performing better, it replaces the original one
+      - If original sub-tree keeps performing better, the alternate sub-tree is deleted and the original one is kept
+
+
+# Stream evaluation
+  - methods:
+    - Holdout evaluation:
+      - two separate datasets one for Dynamic training one for (static or dynamic) testing
+      - report over test set
+    - Prequential evaluation:
+      - One dynmaic dataset for training and testing
+      - model first tested then trained on each instance
+      - report over beginning of the stream or recent part like sliding window, buffer, fading factor,...
+  - measures: 
+    - Accuracy, over a sliding window
+    - cohen’s kappa measure, over a sliding window
+      - normalizes the accuracy of a classifier po by that of a chance predictor pc
+      - $k = \frac{p_0-p_c}{1-p_c}$
+    - Kappa Plus Statistic (K+):
+      - replaces random classifier pc with so-called persistent classifier
+
+# Stream Clustering
+- Solutions for efficiency requirements
+  - high-performance computing architectures
+  - Reduce the number of objects being processed
+    - Summarization/Compression:
+      - lossy but still good representations of the original raw data
+      - Cluster feature vector (CF) summaries or micro-clusters:
+        - Given N d-dimensional points in a cluster C, the cluster feature (CF) vector of C is defined as a triple: CF = ( N , LS , SS )
+          - N = |C|
+          - LS = linear sum of the N data points --> alle x addieren und alle y addieren => (X,Y)
+          - SS = square sum of the N data points --> alle x und y quadrieren und alles zusammen addieren => (Z)
+          - centroid of C = $\sqrt{{\frac{SS}{N}}- (\frac{LS}{N})^2}$
+          - CF additivity: CF(C1 ∪ C2) = CF (C1) + CF (C2) = (N1+ N2, LS1 + LS2, QS1 + QS2)
+          - CF incremental: CFT(C1 U p) = CFT(C1) + p
+- Incremental methods:
+  - require random access to the raw data to update the old clustering based on new instances.
+  - result in exact solutions
+  - appropriate for dynamic data arriving at a low rate
+  - for infinite streams they are not appropriate
+- Stream clustering methods:
+  - not assume random access to the data
+  - results are typically approximate
+- Partitioning methods:
+  - Online summarization - offline clustering methods: CluStream
+- Density-based methods
+  - DenStream
+- Grid-based methods
+  - grid cells “constitute” the summary structure
+  - DStream
+- Evaluation:
+  - measures are evaluated over a future horizon
+  - Time (how fast the points are processed)
+  - Memory (methods that not assume a fixed number of summaries, plotting this number over time is very informative about the underlying population distribution)
+
+# CluStream
+- two components:
+  - online micro-cluster component, each microcluster is represented through its CFT summary
+    - micro-cluster summary CFT = (SSx , LSx , SSt, LSt, n) = (CF2x , CF1x , CF2t, CF1t, n)
+  - offline macro-cluster component, that clusters these summaries into global clusters
+  - algorithm:
+    - Step 1: Initialization
+      - build the initial set of microclusters
+      - offline process in the beginning of the stream --> kMeans on first init points 
+      - Assign unique ID for each cluster and create its CFT micro-cluster summary
+    - Step 2: add new points from the stream
+      - ixed number of q micro-clusters is maintained over time
+      - for each new point:
+        - Compute distance between p and each of the micro-cluster centroids
+        - clu = the closest micro-cluster to p
+        - find max boundary of clu defined as a factor of t of clu radius
+        - If p falls within the maximum boundary:
+          - p is absorbed by clu and CFT updated by adding p
+        - else: 
+          - create a new micro-cluster with p, assign it a new ID, initialize CFT
+          - Possible to delete obsulete cluster or merge clostest ones to keep number of clusters
+    - Step 3: periodic storage of micro-clusters snapshots into disk  s1...st at different levels of granularity depending upon their recency
+    - Step 4: Find the active micro-clusters during horizon h e.g., from ST-ST-10 
+      - Find the stored snapshot which occurs just before time T-h. Let S(T–h’) be the set of micro-clusters.
+      - For each micro-cluster in the current set S(T), we find the list of its component micro-cluster ids. For each of the list of ids, find the corresponding micro-clusters in S(T–h’).
+      - Subtract the CF vectors for the corresponding micro-clusters in S(tc–h’)
+    - Step 5: Apply k-Means over the active micro-clusters in h to derive the k macro-clusters
+      - Initialize: centers are sampled with probability proportional to the number of points in a given micro-cluster
+      - Distance is the centroid distance
+      - New centers are defined as the weighted centroids of the micro-clusters in that micro-cluster partition
+
+# DenStream
+- 2 lists of p-micro-clusters and o-micro-clusters are maintained over time
+  - MC = (CF1, CF2, w)
+  - $CF1 = \sum_{i=1}^nf(t-T_i)p_i$
+  - $CF2 = \sum_{i=1}^nf(t-T_i)p_i^2$
+  - $w = \sum_{i=1}^n = f(t-T_i)$
+- For each new point:
+  - Find its closest p-micro-cluster pclu
+    - if the updated radius of pclu ≤ ε, merge d to pclu
+    - else find its closest o-micro-cluster oclu
+      - If the updated radius of oclu ≤ ε, merge d to oclu
+      - Check if oclu can be upgraded to a p-micro-cluster (if w ≥ β*μ)
+    - else create a new o-micro-cluster with d (keep also the creation time to for the microcluster)
+- ageing according to the exponential ageing function (damped window model)
+- delete outdated information
+  - delete p-micro-clusters that turn into o-micro-clusters with weight w < β*μ
+    - minimum time for a p-micro-cluster to fade into an o-micro-cluster: 
+      - $T_p = [\frac{1}{\lambda}log(\frac{\beta\mu}{\beta\mu-1})]$
+      - check for deletion of p-micro-clusters every Tp time periods
+  - delete o-micro-cluster if w< ξ
+    - $ξ(t_c,T_o) = \frac{2^{-\lambda(t_c-t_o+T_p)}-1}{2^{-\lambda T_p}-1}$
+- Pros for streams: No assumption on the number of clusters, arbitrary shapes, handle outliers and noise
+- Cons: 
+  - The choice of the parameters ε, β, μ
+  - problems with clusters with different density 
