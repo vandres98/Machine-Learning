@@ -1,0 +1,4 @@
+Name EyeColor Gender Age Department
+Alice green male 21 Maths
+Bob blue male 19 Maths
+Charlie brown diverse 25 Maths

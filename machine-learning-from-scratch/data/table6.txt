@@ -1,0 +1,11 @@
+TIMESTAMP OUTLOOK HUMIDITY WIND TIME PLAYTENNIS
+1 Sunny Normal Pleasant Morning Yes
+2 Sunny Normal Pleasant Morning Yes
+3 Sunny Normal Heavy Afternoon No
+4 Overcast High Heavy Afternoon No
+5 Rainy Normal Pleasant Afternoon No
+6 Rainy High Pleasant Morning No
+7 Rainy High Heavy Afternoon No
+8 Overcast Normal Pleasant Morning Yes
+9 Overcast High Heavy Afternoon No
+10 Sunny High Pleasant Morning Yes

@@ -1,0 +1,4 @@
+Name test1 test2 test3 test4 test5
+Alice 1 0 1 0 0
+Bob 0 0 1 0 0
+Charlie 1 1 0 1 1

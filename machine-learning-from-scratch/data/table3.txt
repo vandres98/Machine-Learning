@@ -1,0 +1,5 @@
+dataset1 x y
+a 10 4
+CM 5 15
+c 3 -6
+d 1 11

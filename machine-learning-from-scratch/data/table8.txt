@@ -1,0 +1,5 @@
+ID age income student creditrating
+CustomerA 31..40 high no fair
+CustomerB <=30 medium yes excellent
+CustomerC >40 medium yes fair
+CustomerD 31..40 high yes excellent

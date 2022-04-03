@@ -1,0 +1,6 @@
+Day Outlook Temperature PlayTennis(Class)
+D1 Sunny Low Yes
+D2 Overcast Low No
+D3 Rain Low No
+D4 Rain High Yes
+D5 Overcast High Yes
